@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import {
+  supabase,
+  isSupabaseConfigured,
+} from "@/lib/supabaseClient";
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams();
 
   const nextParam = searchParams.get("next");
@@ -42,7 +45,6 @@ export default function LoginPage() {
       } = await client.auth.getUser();
 
       if (user) {
-        // Already logged in → don't allow login page
         window.location.replace(next);
         return;
       }
@@ -72,27 +74,26 @@ export default function LoginPage() {
 
     const client = supabase;
 
-   const { data, error: signInError } =
-  await client.auth.signInWithPassword({
-    email: email.trim(),
-    password,
-  });
+    const { data, error: signInError } =
+      await client.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-  if (signInError) {
-  setLoading(false);
-  setError(signInError.message);
-  return;
-}
+    if (signInError) {
+      setLoading(false);
+      setError(signInError.message);
+      return;
+    }
 
-if (!data.session) {
-  setLoading(false);
-  setError("Login succeeded, but no active session was created. Please try again.");
-  return;
-}
+    if (!data.session) {
+      setLoading(false);
+      setError(
+        "Login succeeded, but no active session was created. Please try again."
+      );
+      return;
+    }
 
-window.location.replace(next);
-
-    // Force full reload so navbar/session updates correctly
     window.location.replace(next);
   };
 
@@ -126,7 +127,10 @@ window.location.replace(next);
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white">
-        <Loader2 className="animate-spin text-green-700" size={24} />
+        <Loader2
+          className="animate-spin text-green-700"
+          size={24}
+        />
       </main>
     );
   }
@@ -135,7 +139,6 @@ window.location.replace(next);
     <main className="min-h-screen bg-white">
       <div className="mx-auto flex min-h-screen max-w-md items-center px-6 py-16">
         <div className="w-full">
-
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-ink">
               Welcome back
@@ -152,8 +155,10 @@ window.location.replace(next);
             </div>
           )}
 
-          <form onSubmit={onSubmit} className="space-y-5">
-
+          <form
+            onSubmit={onSubmit}
+            className="space-y-5"
+          >
             <div>
               <label className="mb-2 block text-sm font-medium text-ink">
                 Email
@@ -214,21 +219,25 @@ window.location.replace(next);
             >
               {loading ? (
                 <>
-                  <Loader2 size={18} className="animate-spin" />
+                  <Loader2
+                    size={18}
+                    className="animate-spin"
+                  />
                   Logging in...
                 </>
               ) : (
                 "Login"
               )}
             </button>
-
           </form>
 
           <div className="my-6 flex items-center gap-4">
             <div className="h-px flex-1 bg-line" />
+
             <span className="text-xs text-ink/40">
               OR
             </span>
+
             <div className="h-px flex-1 bg-line" />
           </div>
 
@@ -240,12 +249,18 @@ window.location.replace(next);
           >
             {googleLoading ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
                 Connecting...
               </>
             ) : (
               <>
-                <span className="text-base font-bold">G</span>
+                <span className="text-base font-bold">
+                  G
+                </span>
+
                 Continue with Google
               </>
             )}
@@ -253,6 +268,7 @@ window.location.replace(next);
 
           <p className="mt-8 text-center text-sm text-ink/60">
             Don't have an account?{" "}
+
             <Link
               href={`/signup?next=${encodeURIComponent(next)}`}
               className="font-medium text-green-700 hover:underline"
@@ -260,9 +276,25 @@ window.location.replace(next);
               Sign up
             </Link>
           </p>
-
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-white">
+          <Loader2
+            className="animate-spin text-green-700"
+            size={24}
+          />
+        </main>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

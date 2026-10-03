@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -9,7 +9,7 @@ import {
   isSupabaseConfigured,
 } from "@/lib/supabaseClient";
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -26,21 +26,24 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] =
+    useState("");
 
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] =
+    useState(false);
 
-  // NEW: Check whether the user is already logged in
-  const [checkingUser, setCheckingUser] = useState(true);
+  const [checkingUser, setCheckingUser] =
+    useState(true);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    null
+  );
+
   const [success, setSuccess] = useState(false);
 
   /*
-   * ---------------------------------------------------------
    * CHECK IF USER IS ALREADY LOGGED IN
-   * ---------------------------------------------------------
    */
   useEffect(() => {
     const checkUser = async () => {
@@ -56,8 +59,6 @@ export default function SignupPage() {
       } = await client.auth.getUser();
 
       if (user) {
-        // User is already logged in.
-        // Do not allow them to stay on signup page.
         window.location.replace(next);
         return;
       }
@@ -69,9 +70,7 @@ export default function SignupPage() {
   }, [next]);
 
   /*
-   * ---------------------------------------------------------
    * EMAIL SIGNUP
-   * ---------------------------------------------------------
    */
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,25 +85,21 @@ export default function SignupPage() {
       return;
     }
 
-    // Name validation
     if (!name.trim()) {
       setError("Please enter your name.");
       return;
     }
 
-    // Email validation
     if (!email.trim()) {
       setError("Please enter your email.");
       return;
     }
 
-    // Password validation
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
     }
 
-    // Confirm password validation
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -127,15 +122,6 @@ export default function SignupPage() {
           data: {
             full_name: name.trim(),
           },
-
-          /*
-           * Supabase will send the confirmation email.
-           *
-           * After the user confirms their email,
-           * they will return to:
-           *
-           * /auth/callback?next=/original-page
-           */
           emailRedirectTo: redirectUrl,
         },
       });
@@ -148,26 +134,16 @@ export default function SignupPage() {
       return;
     }
 
-    /*
-     * If email confirmation is disabled,
-     * Supabase creates a session immediately.
-     */
     if (data.session) {
       window.location.replace(next);
       return;
     }
 
-    /*
-     * If email confirmation is enabled,
-     * Supabase sends the confirmation email.
-     */
     setSuccess(true);
   };
 
   /*
-   * ---------------------------------------------------------
    * GOOGLE SIGNUP / LOGIN
-   * ---------------------------------------------------------
    */
   const onGoogle = async () => {
     if (!isSupabaseConfigured || !supabase) {
@@ -190,7 +166,6 @@ export default function SignupPage() {
     const { error: googleError } =
       await client.auth.signInWithOAuth({
         provider: "google",
-
         options: {
           redirectTo: redirectUrl,
         },
@@ -208,12 +183,7 @@ export default function SignupPage() {
   };
 
   /*
-   * ---------------------------------------------------------
    * WHILE CHECKING AUTHENTICATION
-   * ---------------------------------------------------------
-   *
-   * This prevents the signup form from briefly appearing
-   * before we know whether the user is already logged in.
    */
   if (checkingUser) {
     return (
@@ -230,7 +200,6 @@ export default function SignupPage() {
     <section className="flex min-h-[70vh] items-center bg-cream py-16">
       <div className="container-froska">
         <div className="mx-auto w-full max-w-sm card-surface p-8">
-
           {/* Header */}
           <div className="text-center">
             <span className="font-display text-xl font-bold text-ink">
@@ -251,7 +220,6 @@ export default function SignupPage() {
             onSubmit={onSubmit}
             className="mt-8 flex flex-col gap-4"
           >
-
             {/* Name */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink/80">
@@ -329,7 +297,6 @@ export default function SignupPage() {
                 className="w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-ink/30 focus:border-green-500"
               />
 
-              {/* Password match indicator */}
               {confirmPassword.length > 0 &&
                 password !== confirmPassword && (
                   <p className="mt-1.5 text-xs text-red-500">
@@ -440,5 +407,22 @@ export default function SignupPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="flex min-h-[70vh] items-center justify-center bg-cream">
+          <Loader2
+            className="animate-spin text-green-700"
+            size={24}
+          />
+        </section>
+      }
+    >
+      <SignupContent />
+    </Suspense>
   );
 }
