@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: Request) {
   try {
     const { name, email, phone, message } = await request.json();
@@ -16,7 +14,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!process.env.RESEND_API_KEY) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (!resendApiKey) {
       console.error("RESEND_API_KEY is missing");
 
       return NextResponse.json(
@@ -26,6 +26,8 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    const resend = new Resend(resendApiKey);
 
     const { data, error } = await resend.emails.send({
       from: "Website Contact Form <onboarding@resend.dev>",
