@@ -31,13 +31,16 @@ export async function GET(request: Request) {
         getAll() {
           return cookieStore.getAll();
         },
+
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
+            cookiesToSet.forEach(
+              ({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              }
+            );
           } catch {
-            // Ignore cookie errors in server components
+            // Ignore cookie errors
           }
         },
       },
@@ -48,9 +51,16 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    console.error(
+      "Auth callback error:",
+      error.message
+    );
+
     return NextResponse.redirect(
       new URL(
-        `/login?error=${encodeURIComponent(error.message)}`,
+        `/login?error=${encodeURIComponent(
+          error.message
+        )}`,
         requestUrl.origin
       )
     );

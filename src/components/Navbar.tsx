@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -50,33 +49,27 @@ export default function Navbar() {
       return;
     }
 
-    /*
-     * Create a local constant after the null check.
-     *
-     * This fixes:
-     * "'supabase' is possibly 'null'"
-     */
     const client = supabase;
 
     let mounted = true;
 
     /*
-     * Get the currently logged-in user
+     * Get existing session
      */
     const loadUser = async () => {
       const {
-        data: { user },
-      } = await client.auth.getUser();
+        data: { session },
+      } = await client.auth.getSession();
 
       if (mounted) {
-        setUser(user);
+        setUser(session?.user ?? null);
       }
     };
 
     loadUser();
 
     /*
-     * Listen for authentication changes
+     * Listen for login/logout changes
      */
     const {
       data: { subscription },
@@ -88,9 +81,6 @@ export default function Navbar() {
       }
     );
 
-    /*
-     * Cleanup
-     */
     return () => {
       mounted = false;
       subscription.unsubscribe();
@@ -108,17 +98,15 @@ export default function Navbar() {
    * Logout
    */
   const logout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
+    if (!supabase) {
+      return;
     }
+
+    await supabase.auth.signOut();
 
     setUser(null);
     setOpen(false);
 
-    /*
-     * Reload the page so the entire app
-     * immediately reflects the logged-out state.
-     */
     window.location.replace("/");
   };
 
@@ -195,11 +183,8 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            /* Login */
             <Link
-              href={`/login?next=${encodeURIComponent(
-                pathname
-              )}`}
+              href={`/login?next=${encodeURIComponent(pathname)}`}
               className="text-sm font-medium text-ink/80 transition-colors hover:text-green-700"
             >
               Login
@@ -219,18 +204,12 @@ export default function Navbar() {
         <button
           type="button"
           aria-label={
-            open
-              ? "Close menu"
-              : "Open menu"
+            open ? "Close menu" : "Open menu"
           }
           className="flex h-10 w-10 items-center justify-center rounded-full text-ink md:hidden"
           onClick={() => setOpen((value) => !value)}
         >
-          {open ? (
-            <X size={22} />
-          ) : (
-            <Menu size={22} />
-          )}
+          {open ? <X size={22} /> : <Menu size={22} />}
         </button>
       </nav>
 
@@ -240,7 +219,6 @@ export default function Navbar() {
 
           <div className="flex flex-col gap-1">
 
-            {/* Navigation links */}
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -260,9 +238,7 @@ export default function Navbar() {
                 >
                   <User size={18} />
 
-                  <span>
-                    {userName}
-                  </span>
+                  <span>{userName}</span>
                 </Link>
 
                 {/* Mobile logout */}
@@ -273,17 +249,12 @@ export default function Navbar() {
                 >
                   <LogOut size={18} />
 
-                  <span>
-                    Logout
-                  </span>
+                  <span>Logout</span>
                 </button>
               </>
             ) : (
-              /* Mobile login */
               <Link
-                href={`/login?next=${encodeURIComponent(
-                  pathname
-                )}`}
+                href={`/login?next=${encodeURIComponent(pathname)}`}
                 className="rounded-lg px-2 py-3 text-base font-medium text-ink hover:bg-green-50"
               >
                 Login
