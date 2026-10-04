@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -16,59 +17,37 @@ export async function GET(request: Request) {
 
   if (!code) {
     return NextResponse.redirect(
-      new URL("/login?error=oauth_failed", requestUrl.origin)
+      new URL("/login?error=missing_code", requestUrl.origin)
     );
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.redirect(
-      new URL("/login?error=supabase_not_configured", requestUrl.origin)
-    );
-  }
-
-  const response = NextResponse.redirect(
-    new URL(next, requestUrl.origin)
-  );
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          const cookieHeader = request.headers.get("cookie");
-
-          if (!cookieHeader) {
-            return [];
-          }
-
-          return cookieHeader.split(";").map((cookie) => {
-            const [name, ...valueParts] = cookie.trim().split("=");
-
-            return {
-              name,
-              value: valueParts.join("="),
-            };
-          });
+          return cookieStore.getAll();
         },
-
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // Ignore cookie errors in server components
+          }
         },
       },
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } =
+    await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    console.error("OAuth callback error:", error);
-
     return NextResponse.redirect(
       new URL(
         `/login?error=${encodeURIComponent(error.message)}`,
@@ -77,5 +56,7 @@ export async function GET(request: Request) {
     );
   }
 
-  return response;
+  return NextResponse.redirect(
+    new URL(next, requestUrl.origin)
+  );
 }
